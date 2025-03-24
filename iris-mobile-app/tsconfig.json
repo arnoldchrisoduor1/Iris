@@ -1,0 +1,22 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "nativewind-env.d.ts",
+    "screens/CameraScreen.js",
+    "navigation/TabNavigator.js",
+    "navigation/AppNavigator.js",
+    "services/api.js",
+    "services/storage.js",
+    "App.js"
+  ]
+}
