@@ -1,4 +1,5 @@
 import os
+import boto3
 import numpy as np
 import tensorflow as tf
 from flask import Flask, request, jsonify, render_template
@@ -6,10 +7,13 @@ from werkzeug.utils import secure_filename
 from PIL import Image
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 
-# Configuration
+# Configuration class
 class Config:
     UPLOAD_FOLDER = 'uploads/'
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+    S3_BUCKET = 'iris-ai-models'
+    MODEL_KEY = 'models/final_mobilenet_model.keras'
+    LOCAL_MODEL_PATH = './models/final_mobilenet_model.keras'
 
 # Fruit classes to match your model
 FRUIT_CLASSES = [
@@ -22,14 +26,43 @@ FRUIT_CLASSES = [
 application = Flask(__name__)
 application.config['UPLOAD_FOLDER'] = Config.UPLOAD_FOLDER
 
-# Ensure upload directory exists
+# Ensure upload and models directories exist
 os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
+os.makedirs('./models', exist_ok=True)
+
+# Download model from S3
+def download_model_from_s3():
+    try:
+        # Create S3 client
+        s3 = boto3.client('s3')
+        
+        # Download the model file
+        s3.download_file(
+            Config.S3_BUCKET, 
+            Config.MODEL_KEY, 
+            Config.LOCAL_MODEL_PATH
+        )
+        print("Model downloaded successfully from S3!")
+        return True
+    except Exception as e:
+        print(f"Error downloading model from S3: {e}")
+        return False
 
 # Load pre-trained Keras model
 def load_model():
     global model
-    model = tf.keras.models.load_model('./models/final_mobilenet_model.keras')
-    print("Model loaded successfully!")
+    try:
+        # Ensure model is downloaded
+        if not os.path.exists(Config.LOCAL_MODEL_PATH):
+            if not download_model_from_s3():
+                raise Exception("Could not download model from S3")
+        
+        # Load model
+        model = tf.keras.models.load_model(Config.LOCAL_MODEL_PATH)
+        print("Model loaded successfully!")
+    except Exception as e:
+        print(f"Error loading model: {e}")
+        raise
 
 # Preprocess image for model prediction
 def preprocess_image(image_path):
