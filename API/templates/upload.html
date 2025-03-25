@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fruit Classification Model - Image Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        #preview {
+            max-width: 300px;
+            margin: 20px auto;
+            display: none;
+        }
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Fruit Classification Model</h1>
+    
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" id="imageUpload" name="image" accept="image/*" required>
+        <img id="preview" src="#" alt="Image Preview">
+        <button type="submit">Classify Image</button>
+    </form>
+
+    <div id="result"></div>
+
+    <h2>Supported Fruit Classes</h2>
+    <p>{{ ', '.join(fruit_classes) }}</p>
+
+    <script>
+        document.getElementById('imageUpload').addEventListener('change', function(event) {
+            const preview = document.getElementById('preview');
+            const file = event.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            }
+
+            reader.readAsDataURL(file);
+        });
+
+        document.getElementById('uploadForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const resultDiv = document.getElementById('result');
+
+            resultDiv.textContent = 'Classifying...';
+
+            fetch('/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    resultDiv.textContent = 
+                        `Predicted Fruit: ${data.prediction.class}\n` +
+                        `Confidence: ${data.prediction.confidence * 100}%\n` +
+                        `Processing Time: ${data.prediction.processingTime} seconds`;
+                } else {
+                    resultDiv.textContent = `Error: ${data.error}`;
+                }
+            })
+            .catch(error => {
+                resultDiv.textContent = `Error: ${error}`;
+            });
+        });
+    </script>
+</body>
+</html>
