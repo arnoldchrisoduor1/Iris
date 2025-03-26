@@ -12,6 +12,7 @@ const HistoryScreen = () => {
     setIsLoading(true);
     try {
       const data = await getDetectionHistory();
+      // Remove the filter to keep all items, even those without predictions
       setHistory(data);
     } catch (error) {
       console.error('Error loading history:', error);
@@ -50,21 +51,36 @@ const HistoryScreen = () => {
   };
   
   const renderHistoryItem = ({ item }) => {
+    // Safe access to prediction data with fallbacks
+    const predictionClass = item.prediction?.class || 'Unknown';
+    const confidence = item.prediction?.confidence 
+      ? (item.prediction.confidence * 100).toFixed(1) 
+      : '0';
+    
+    // Handle cases where imageUri might be missing
+    const imageSource = item.imageUri 
+      ? { uri: item.imageUri }
+      : require('../assets/placeholder-image.png'); // Add a placeholder image
+
     return (
       <View className="flex-row p-4 border-b border-gray-200">
         <Image 
-          source={{ uri: item.imageUri }}
+          source={imageSource}
           className="w-20 h-20 rounded-md mr-3"
         />
         <View className="flex-1 justify-center">
-          <Text className="text-lg font-medium capitalize">{item.prediction.class}</Text>
+          <Text className="text-lg font-medium capitalize">{predictionClass}</Text>
           <Text className="text-gray-500 text-sm">
-            {new Date(item.timestamp).toLocaleString()}
+            {item.timestamp ? new Date(item.timestamp).toLocaleString() : 'Unknown date'}
           </Text>
           <View className="flex-row items-center mt-1">
             <Text className="text-gray-700">Confidence: </Text>
-            <Text className="font-medium">{(item.prediction.confidence * 100).toFixed(1)}%</Text>
+            <Text className="font-medium">{confidence}%</Text>
           </View>
+          {/* Show status for failed detections */}
+          {!item.prediction && (
+            <Text className="text-red-500 text-xs mt-1">Detection failed</Text>
+          )}
         </View>
       </View>
     );

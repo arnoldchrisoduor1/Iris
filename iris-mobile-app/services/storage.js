@@ -5,21 +5,26 @@ const HISTORY_KEY = 'detection_history';
 
 export const saveDetection = async (detection) => {
   try {
-    // Get existing history
     const historyJson = await AsyncStorage.getItem(HISTORY_KEY);
     const history = historyJson ? JSON.parse(historyJson) : [];
     
-    // Add new detection with timestamp
+    // Ensure prediction has proper structure
+    const safePrediction = detection.prediction ? {
+      class: detection.prediction.class || 'unknown',
+      confidence: detection.prediction.confidence || 0,
+      // add other prediction fields you expect
+    } : null;
+    
     const newDetection = {
-      ...detection,
       id: Date.now().toString(),
       timestamp: new Date().toISOString(),
+      imageUri: detection.imageUri,
+      prediction: safePrediction,  // Use the safe version
+      success: detection.success !== undefined ? detection.success : false,
+      error: detection.error || null,
     };
     
-    // Update history (newest first)
     const updatedHistory = [newDetection, ...history];
-    
-    // Save updated history
     await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
     
     return newDetection;
@@ -46,4 +51,10 @@ export const clearHistory = async () => {
     console.error('Error clearing history:', error);
     throw error;
   }
+};
+
+export default {
+  saveDetection,
+  getDetectionHistory,
+  clearHistory
 };

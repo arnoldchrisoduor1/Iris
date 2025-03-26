@@ -68,29 +68,31 @@ const HomeScreen = () => {
           </View>
           
           <View className="p-4">
-            {isLoading ? (
-              <Text className="text-gray-500 text-center py-4">Loading...</Text>
-            ) : recentDetections.length > 0 ? (
-              recentDetections.map((item) => (
-                <View key={item.id} className="flex-row items-center py-2 border-b border-gray-100">
-                  <Image 
-                    source={{ uri: item.imageUri }} 
-                    className="w-16 h-16 rounded-md mr-3"
-                  />
-                  <View className="flex-1">
-                    <Text className="text-lg font-medium capitalize">{item.prediction.class}</Text>
-                    <Text className="text-gray-500">
-                      {new Date(item.timestamp).toLocaleString()}
-                    </Text>
-                  </View>
-                  <Text className="text-gray-700 font-medium">
-                    {(item.prediction.confidence * 100).toFixed(0)}%
-                  </Text>
-                </View>
-              ))
-            ) : (
-              <Text className="text-gray-500 text-center py-4">No recent detections</Text>
-            )}
+          {isLoading ? (
+  <Text className="text-gray-500 text-center py-4">Loading...</Text>
+) : recentDetections.length > 0 ? (
+  recentDetections.map((item) => (
+    <View key={item.id} className="flex-row items-center py-2 border-b border-gray-100">
+      <Image 
+        source={{ uri: item.imageUri }} 
+        className="w-16 h-16 rounded-md mr-3"
+      />
+      <View className="flex-1">
+        <Text className="text-lg font-medium capitalize">
+          {item.prediction?.class || 'Unknown'} {/* Safe access */}
+        </Text>
+        <Text className="text-gray-500">
+          {new Date(item.timestamp).toLocaleString()}
+        </Text>
+      </View>
+      <Text className="text-gray-700 font-medium">
+        {item.prediction ? (item.prediction.confidence * 100).toFixed(0) : '0'}%
+      </Text>
+    </View>
+  ))
+) : (
+  <Text className="text-gray-500 text-center py-4">No recent detections</Text>
+)}
             
             {recentDetections.length > 0 && (
               <TouchableOpacity 

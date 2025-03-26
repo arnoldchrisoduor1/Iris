@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator, Image, StyleSheet } fr
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as MediaLibrary from 'expo-media-library';
 import Toast from 'react-native-toast-message';
-import { mockRecognizeImage } from '../services/api';
+import { recognizeImage } from '../services/api';
 import { saveDetection } from '../services/storage';
 
 const CameraScreen = () => {
@@ -73,27 +73,53 @@ const CameraScreen = () => {
         const photo = await cameraRef.current.takePictureAsync();
         setLastImage(photo.uri);
         
-        const result = await mockRecognizeImage(photo.uri);
-        setLastPrediction(result.prediction);
-        
+        let detectionResult = {
+          success: false,
+          error: null,
+          prediction: null
+        };
+
+        try {
+          // Attempt to recognize image
+          const result = await recognizeImage(photo.uri);
+          setLastPrediction(result.prediction);
+          detectionResult.success = true;
+          detectionResult.prediction = result.prediction;
+
+          // Show success toast
+          Toast.show({
+            type: 'success',
+            text1: 'Object Detected',
+            text2: `${result.prediction.class} (${(result.prediction.confidence * 100).toFixed(1)}%)`,
+            position: 'top',
+            visibilityTime: 3000,
+          });
+        } catch (recognitionError) {
+          console.error('Error recognizing image:', recognitionError);
+          detectionResult.error = recognitionError.message || 'Unknown recognition error';
+
+          // Show error toast
+          Toast.show({
+            type: 'error',
+            text1: 'Detection Failed',
+            text2: 'Could not process the image',
+            position: 'top',
+          });
+        }
+
+        // Save detection regardless of recognition success
         await saveDetection({
           imageUri: photo.uri,
-          prediction: result.prediction,
-        });
-        
-        Toast.show({
-          type: 'success',
-          text1: 'Object Detected',
-          text2: `${result.prediction.class} (${(result.prediction.confidence * 100).toFixed(1)}%)`,
-          position: 'top',
-          visibilityTime: 3000,
+          prediction: detectionResult.prediction,
+          success: detectionResult.success,
+          error: detectionResult.error
         });
       } catch (error) {
         console.error('Error capturing image:', error);
         Toast.show({
           type: 'error',
-          text1: 'Detection Failed',
-          text2: 'Could not process the image',
+          text1: 'Capture Failed',
+          text2: 'Could not capture the image',
           position: 'top',
         });
       } finally {
