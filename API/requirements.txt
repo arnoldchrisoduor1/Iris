@@ -5,3 +5,4 @@ numpy
 werkzeug
 gunicorn
 boto3
+flask-cors
